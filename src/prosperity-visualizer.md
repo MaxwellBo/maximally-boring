@@ -1,81 +1,82 @@
-# Prosperity visualizer
+# IMC Prosperity 2 visualizer
 
-```js echo
-// logFile = FileAttachment("0ac72d26-ba7f-47e4-8699-c4bc11c2386f.log").text()
+```js
+const logFile = FileAttachment("data/28eb68e2-818d-46e4-9a45-44f936224284.log").text()
 ```
 
 ```js
-viewof kMovingAverage = Inputs.range([1, 1000], {
+view(logFile)
+```
+
+
+```js
+const kMovingAverage = view(Inputs.range([1, 1000], {
   label: "Moving average window (k)",
   step: 10
-})
+}))
 ```
 
-```js echo
-logFile = FileAttachment("28eb68e2-818d-46e4-9a45-44f936224284.log").text()
-```
 
 ```js
-viewof unsettledTimestampRange = interval(
+const unsettledTimestampRange = view(interval(
   [0, d3.max(prices, (d) => d.timestamp)],
   {
     label: "timestamp range (delayed by 1 sec)",
     step: 1
   }
-)
+))
 ```
 
 ```js
-viewof showTrades = Inputs.toggle({ label: "Show log trades", value: true })
+const showTrades = view(Inputs.toggle({ label: "Show log trades", value: true }))
 ```
 
 ```js
-{
-  const scopedZippedPrices = zippedPrices.filter(
-    (d) => timestampRange[0] <= d.timestamp && d.timestamp <= timestampRange[1]
-  );
-  return Plot.plot({
-    title: "ETF diff chart",
-    color: {
-      legend: true
-    },
-    y: {
-      label: "price"
-    },
-    marginLeft: 50,
-    width,
-    marks: [
-      Plot.differenceY(scopedZippedPrices, {
-        x: "timestamp",
-        y1: "unit_mid_price",
-        y2: "aggregate_mid_price",
-        positiveFill: "green",
-        negativeFill: "purple"
-      }),
-      Plot.lineY(scopedZippedPrices, {
-        x: "timestamp",
-        y: "unit_mid_price",
-        strokeWidth: 3,
-        stroke: (d) => "GIFT_BASKET",
-        curve: "step-after",
-        tip: true
-      }),
-      // Plot.lineY(scopedZippedPrices, {
-      //   x: "timestamp",
-      //   y: (d) => d.unit_mid_price - d.aggregate_mid_price
-      //   // stroke: "6 * STRAWBERRIES + 4 * CHOCOLATE + ROSES"
-      // }),
-      Plot.lineY(scopedZippedPrices, {
-        x: "timestamp",
-        y: "aggregate_mid_price",
-        strokeWidth: 3,
-        stroke: (d) => "6 * STRAWBERRIES + 4 * CHOCOLATE + ROSES",
-        tip: true,
-        curve: "step-after"
-      })
-    ]
-  });
-}
+const scopedZippedPrices = zippedPrices.filter(
+  (d) => timestampRange[0] <= d.timestamp && d.timestamp <= timestampRange[1]
+);
+
+view(Plot.plot({
+  title: "ETF diff chart",
+  color: {
+    legend: true
+  },
+  y: {
+    label: "price"
+  },
+  marginLeft: 50,
+  width,
+  marks: [
+    Plot.differenceY(scopedZippedPrices, {
+      x: "timestamp",
+      y1: "unit_mid_price",
+      y2: "aggregate_mid_price",
+      positiveFill: "green",
+      negativeFill: "purple"
+    }),
+    Plot.lineY(scopedZippedPrices, {
+      x: "timestamp",
+      y: "unit_mid_price",
+      strokeWidth: 3,
+      stroke: (d) => "GIFT_BASKET",
+      curve: "step-after",
+      tip: true
+    }),
+    // Plot.lineY(scopedZippedPrices, {
+    //   x: "timestamp",
+    //   y: (d) => d.unit_mid_price - d.aggregate_mid_price
+    //   // stroke: "6 * STRAWBERRIES + 4 * CHOCOLATE + ROSES"
+    // }),
+    Plot.lineY(scopedZippedPrices, {
+      x: "timestamp",
+      y: "aggregate_mid_price",
+      strokeWidth: 3,
+      stroke: (d) => "6 * STRAWBERRIES + 4 * CHOCOLATE + ROSES",
+      tip: true,
+      curve: "step-after"
+    })
+  ]
+}))
 ```
 
 ```js
@@ -99,7 +100,7 @@ viewof showTrades = Inputs.toggle({ label: "Show log trades", value: true })
         curve: "step-after"
       })
     ]
-  });
+  })
 }
 ```
 
@@ -283,7 +284,11 @@ import { settle } from "@mjbo/settling-input"
 We need to "settle" the input because immediately filtering with the new input tanks the browser. This will delay plot recomputation by 1 second.
 
 ```js echo
-timestampRange = settle(viewof unsettledTimestampRange)
+// const timestampRange = settle(viewof unsettledTimestampRange)
+```
+
+```js echo
+const timestampRange = [0, 99900]
 ```
 
 ### Data cleaning
@@ -291,22 +296,18 @@ timestampRange = settle(viewof unsettledTimestampRange)
 Now lets the load the selected log files. Reminder, the selected log files are:
 
 ```js echo
-chunks = {
-  const chunks = logFile.split("\n\n\n\n");
-  const sandbox = chunks[0].split("Sandbox logs:\n")[1];
-  const activities = chunks[1].split("Activities log:\n")[1];
-  const trades = JSON.parse(chunks[2].split("\nTrade History:\n")[1]);
+const chunks_ = logFile.split("\n\n\n\n");
+const sandbox = chunks[0].split("Sandbox logs:\n")[1];
+const activities = chunks[1].split("Activities log:\n")[1];
+const trades = JSON.parse(chunks[2].split("\nTrade History:\n")[1]);
 
-  return {
+const chunks = ({
     sandbox,
     activities,
     trades
-  };
-}
-```
+});
 
-```js echo
-logger = JSON.parse(`[${chunks.sandbox.replaceAll("}\n{", "},{")}]`).map(
+const logger = JSON.parse(`[${chunks.sandbox.replaceAll("}\n{", "},{")}]`).map(
   (d) => ({
     ...d
     
@@ -314,24 +315,20 @@ logger = JSON.parse(`[${chunks.sandbox.replaceAll("}\n{", "},{")}]`).map(
 )
 ```
 
-```js echo
-xss = logger.map((d) => d.lambdaLog)[0]
-```
-
 They're stored with `;` separators instead of `,`s, so we replace the `;` with `,`s and then pass that modified file to the **COMMA** separated value parser (fucking IMC).
 
 ```js echo
-prices = d3.csvParse(chunks.activities.replace(/;/g, ","), d3.autoType)
+const prices = d3.csvParse(chunks.activities.replace(/;/g, ","), d3.autoType)
 ```
 
 ```js echo
-trades = chunks.trades
+const trades = chunks.trades
 ```
 
 Now let's create some ["tidy data"](https://tidyr.tidyverse.org/) - a single row per observation. This will make it easy to visualize in some situations.
 
 ```js echo
-tidyPrices = prices.flatMap(
+const tidyPrices = prices.flatMap(
   ({
     timestamp,
     product,
@@ -402,7 +399,7 @@ tidyPrices = prices.flatMap(
 ```
 
 ```js echo
-scaledPrices = prices
+const scaledPrices = prices
   .map((p) => {
     if (p.product === "STRAWBERRIES") {
       return { ...p, scaled_mid_price: p.mid_price * 6 };
@@ -420,7 +417,7 @@ scaledPrices = prices
 ```
 
 ```js echo
-aggregatePrices = Object.entries(
+const aggregatePrices = Object.entries(
   _.groupBy(scaledPrices, (d) => d.timestamp)
 ).map(([k, v]) => ({
   timestamp: Number(k),
@@ -429,7 +426,7 @@ aggregatePrices = Object.entries(
 ```
 
 ```js echo
-zippedPrices = aggregatePrices.map((d) => {
+const zippedPrices = aggregatePrices.map((d) => {
   const pairedGiftBasket = prices.find(
     (p) => p.timestamp === d.timestamp && p.product === "GIFT_BASKET"
   );
@@ -445,7 +442,7 @@ zippedPrices = aggregatePrices.map((d) => {
 ### Plots
 
 ```js echo
-plotPrice = (product) => {
+function plotPrice(product) {
   const scopedPrices = prices.filter(
     (d) =>
       d.product == product &&
@@ -523,7 +520,7 @@ plotPrice = (product) => {
 ```
 
 ```js echo
-listTrades = (product) => {
+function listTrades(product) {
   const scopedTrades = trades.filter(
     (d) =>
       d.symbol == product &&
@@ -536,7 +533,7 @@ listTrades = (product) => {
 ```
 
 ```js echo
-plotPnl = () => {
+function plotPnl() {
   const scopedPrices = prices.filter(
     (d) => timestampRange[0] <= d.timestamp && d.timestamp <= timestampRange[1]
   );
@@ -559,7 +556,7 @@ plotPnl = () => {
 ```
 
 ```js echo
-plotVolume = (product) => {
+function plotVolume(product) {
   const scopedPrices = tidyPrices.filter(
     (d) =>
       d.product == product &&
@@ -593,7 +590,7 @@ plotVolume = (product) => {
 ```
 
 ```js echo
-plotRootedMidVolume = (product) => {
+function plotRootedMidVolume(product) {
   const scopedPrices = tidyPrices.filter(
     (d) =>
       d.product == product &&
@@ -631,7 +628,7 @@ plotSpread("STARFRUIT")
 ```
 
 ```js echo
-plotSpread = (product) => {
+function plotSpread(product) {
   const scopedPrices = prices.filter(
     (d) =>
       d.product == product &&
