@@ -18,7 +18,7 @@ export default {
 
   // Some additional configuration options and their defaults:
   theme: "light", // try "light", "dark", "slate", etc.
-  header: "<img src='https://maxbo.me/maximally-boring.jpeg' style='height: 5em; margin-right: 0.5em;' />",
+  header: "<a href='https://maxbo.me'><img src='https://maxbo.me/maximally-boring.jpeg' style='height: 5em; margin-right: 0.5em;' /></a>",
   // footer: "Built with Observable.", // what to show in the footer (HTML)
   // toc: true, // whether to show the table of contents
   // pager: true, // whether to show previous & next links in the footer
